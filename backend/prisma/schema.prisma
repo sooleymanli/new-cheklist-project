@@ -1,0 +1,212 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── COMPANY ────────────────────────────────────────────────────────────────
+
+model Company {
+  id        String    @id @default(uuid()) @db.Uuid
+  name      String    @db.VarChar(255)
+  logoUrl   String?   @map("logo_url") @db.VarChar(500)
+  isActive  Boolean   @default(true) @map("is_active")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@map("companies")
+}
+
+// ─── ROLES & PERMISSIONS ────────────────────────────────────────────────────
+
+model Role {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String   @unique @db.VarChar(100)
+  description String?  @db.Text
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  permissions RolePermission[]
+  users       User[]
+
+  @@map("roles")
+}
+
+model Permission {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String   @unique @db.VarChar(100)
+  description String?  @db.Text
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  roles RolePermission[]
+
+  @@map("permissions")
+}
+
+model RolePermission {
+  roleId       String @map("role_id") @db.Uuid
+  permissionId String @map("permission_id") @db.Uuid
+
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+// ─── USERS ──────────────────────────────────────────────────────────────────
+
+model User {
+  id           String    @id @default(uuid()) @db.Uuid
+  roleId       String    @map("role_id") @db.Uuid
+  firstName    String    @map("first_name") @db.VarChar(100)
+  lastName     String    @map("last_name") @db.VarChar(100)
+  position     String?   @db.VarChar(100)
+  email        String    @unique @db.VarChar(255)
+  mobile       String?   @db.VarChar(50)
+  passwordHash String    @map("password_hash") @db.Text
+  isActive     Boolean   @default(true) @map("is_active")
+  lastLoginAt  DateTime? @map("last_login_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  createdBy    String?   @map("created_by") @db.Uuid
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+  updatedBy    String?   @map("updated_by") @db.Uuid
+  deletedAt    DateTime? @map("deleted_at")
+  deletedBy    String?   @map("deleted_by") @db.Uuid
+
+  role Role @relation(fields: [roleId], references: [id])
+
+  @@index([roleId])
+  @@index([isActive])
+  @@map("users")
+}
+
+// ─── BUILDINGS ──────────────────────────────────────────────────────────────
+
+model Building {
+  id          String    @id @default(uuid()) @db.Uuid
+  name        String    @db.VarChar(255)
+  description String?   @db.Text
+  isActive    Boolean   @default(true) @map("is_active")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  createdBy   String?   @map("created_by") @db.Uuid
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  updatedBy   String?   @map("updated_by") @db.Uuid
+  deletedAt   DateTime? @map("deleted_at")
+  deletedBy   String?   @map("deleted_by") @db.Uuid
+
+  floors    Floor[]
+  locations Location[]
+
+  @@index([name])
+  @@map("buildings")
+}
+
+model Floor {
+  id          String    @id @default(uuid()) @db.Uuid
+  buildingId  String    @map("building_id") @db.Uuid
+  name        String    @db.VarChar(255)
+  description String?   @db.Text
+  isActive    Boolean   @default(true) @map("is_active")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  createdBy   String?   @map("created_by") @db.Uuid
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  updatedBy   String?   @map("updated_by") @db.Uuid
+  deletedAt   DateTime? @map("deleted_at")
+  deletedBy   String?   @map("deleted_by") @db.Uuid
+
+  building  Building   @relation(fields: [buildingId], references: [id])
+  locations Location[]
+
+  @@index([buildingId])
+  @@map("floors")
+}
+
+model Location {
+  id          String    @id @default(uuid()) @db.Uuid
+  buildingId  String    @map("building_id") @db.Uuid
+  floorId     String?   @map("floor_id") @db.Uuid
+  name        String    @db.VarChar(255)
+  description String?   @db.Text
+  isActive    Boolean   @default(true) @map("is_active")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  createdBy   String?   @map("created_by") @db.Uuid
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  updatedBy   String?   @map("updated_by") @db.Uuid
+  deletedAt   DateTime? @map("deleted_at")
+  deletedBy   String?   @map("deleted_by") @db.Uuid
+
+  building Building @relation(fields: [buildingId], references: [id])
+  floor    Floor?   @relation(fields: [floorId], references: [id])
+
+  @@index([buildingId])
+  @@index([floorId])
+  @@index([name])
+  @@map("locations")
+}
+
+// ─── QR CODES ───────────────────────────────────────────────────────────────
+
+model QrCode {
+  id         String    @id @default(uuid()) @db.Uuid
+  entityType String    @map("entity_type") @db.VarChar(50) // building, floor, location
+  entityId   String    @map("entity_id") @db.Uuid
+  code       String    @unique @db.VarChar(100)
+  isActive   Boolean   @default(true) @map("is_active")
+  createdAt  DateTime  @default(now()) @map("created_at")
+  createdBy  String?   @map("created_by") @db.Uuid
+
+  scanLogs   QrScanLog[]
+
+  @@index([entityType, entityId])
+  @@index([code])
+  @@map("qr_codes")
+}
+
+model QrScanLog {
+  id        String   @id @default(uuid()) @db.Uuid
+  qrCodeId  String   @map("qr_code_id") @db.Uuid
+  userId    String?  @map("user_id") @db.Uuid
+  scannedAt DateTime @default(now()) @map("scanned_at")
+  ipAddress String?  @map("ip_address") @db.VarChar(45)
+
+  qrCode QrCode @relation(fields: [qrCodeId], references: [id])
+
+  @@index([qrCodeId])
+  @@index([scannedAt])
+  @@map("qr_scan_logs")
+}
+
+// ─── AUDIT LOGS ─────────────────────────────────────────────────────────────
+
+model AuditLog {
+  id         String   @id @default(uuid()) @db.Uuid
+  userId     String?  @map("user_id") @db.Uuid
+  entityType String   @map("entity_type") @db.VarChar(100)
+  entityId   String   @map("entity_id") @db.Uuid
+  action     String   @db.VarChar(100)
+  oldData    Json?    @map("old_data")
+  newData    Json?    @map("new_data")
+  ipAddress  String?  @map("ip_address") @db.VarChar(45)
+  userAgent  String?  @map("user_agent") @db.Text
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@index([entityType])
+  @@index([entityId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+// ─── SETTINGS ───────────────────────────────────────────────────────────────
+
+model Setting {
+  key       String   @id @db.VarChar(100)
+  value     Json
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("settings")
+}
