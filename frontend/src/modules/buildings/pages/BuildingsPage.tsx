@@ -270,7 +270,7 @@ width: 200, },
           columns={columns}
           dataSource={data?.data}
           loading={isLoading}
-          scroll={{ x: 500 }}
+          scroll={{ x: 500, y: 'calc(100vh - 320px)' }}
           rowClassName={(record) => !record.isActive ? 'row-disabled' : ''}
           onRow={(record) => ({
             onClick: () => {
@@ -287,8 +287,10 @@ width: 200, },
             pageSize,
             total: data?.meta?.total,
             showSizeChanger: true,
+            position: ['bottomRight'],
             onChange: (p, ps) => setSearchParams((prev) => { prev.set('page', String(p)); prev.set('pageSize', String(ps)); return prev; }),
           }}
+          sticky
           expandable={{
             expandedRowKeys: expandedId ? [expandedId] : [],
             expandIcon: ({ expanded, onExpand, record }) => expanded ? <DownOutlined style={{ cursor: 'pointer' }} onClick={(e) => onExpand(record, e)} /> : <RightOutlined style={{ cursor: 'pointer' }} onClick={(e) => onExpand(record, e)} />,

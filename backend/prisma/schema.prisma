@@ -143,6 +143,10 @@ model Location {
   building Building @relation(fields: [buildingId], references: [id])
   floor    Floor?   @relation(fields: [floorId], references: [id])
 
+  templateLocations   ChecklistTemplateLocation[]
+  checklistInstances  ChecklistInstance[]
+  checklistResponses  ChecklistResponse[]
+
   @@index([buildingId])
   @@index([floorId])
   @@index([name])
@@ -209,4 +213,299 @@ model Setting {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("settings")
+}
+
+// ─── FILES ──────────────────────────────────────────────────────────────────
+
+model File {
+  id           String    @id @default(uuid()) @db.Uuid
+  originalName String    @map("original_name") @db.VarChar(500)
+  fileName     String    @map("file_name") @db.VarChar(500)
+  mimeType     String    @map("mime_type") @db.VarChar(100)
+  size         Int
+  bucket       String    @db.VarChar(100)
+  path         String    @db.VarChar(1000)
+  entityType   String?   @map("entity_type") @db.VarChar(50)
+  entityId     String?   @map("entity_id") @db.Uuid
+  uploadedBy   String?   @map("uploaded_by") @db.Uuid
+  createdAt    DateTime  @default(now()) @map("created_at")
+  deletedAt    DateTime? @map("deleted_at")
+
+  @@index([entityType, entityId])
+  @@map("files")
+}
+
+// ─── CHECKLIST TEMPLATES ────────────────────────────────────────────────────
+
+model ChecklistTemplate {
+  id          String    @id @default(uuid()) @db.Uuid
+  name        String    @db.VarChar(255)
+  description String?   @db.Text
+  version     Int       @default(1)
+  status      String    @default("draft") @db.VarChar(20) // draft, active, inactive
+  isActive    Boolean   @default(true) @map("is_active")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  createdBy   String?   @map("created_by") @db.Uuid
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  updatedBy   String?   @map("updated_by") @db.Uuid
+  deletedAt   DateTime? @map("deleted_at")
+  deletedBy   String?   @map("deleted_by") @db.Uuid
+
+  fields      ChecklistTemplateField[]
+  locations   ChecklistTemplateLocation[]
+  schedules   ChecklistSchedule[]
+  assignments ChecklistAssignment[]
+  instances   ChecklistInstance[]
+  inspectionAssignments InspectionAssignment[]
+
+  @@index([status])
+  @@index([name])
+  @@map("checklist_templates")
+}
+
+model ChecklistTemplateField {
+  id          String @id @default(uuid()) @db.Uuid
+  templateId  String @map("template_id") @db.Uuid
+  orderNo     Int    @map("order_no")
+  fieldKey    String @map("field_key") @db.VarChar(100)
+  fieldLabel  String @map("field_label") @db.VarChar(255)
+  fieldType   String @map("field_type") @db.VarChar(50) // text, number, checkbox, yes_no, select, multi_select, date, file_upload, photo, signature
+  category    String? @db.VarChar(100)
+  fieldConfig Json   @default("{}") @map("field_config") // { required, placeholder, options, min, max, ... }
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  template ChecklistTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  @@index([templateId])
+  @@map("checklist_template_fields")
+}
+
+model ChecklistTemplateLocation {
+  templateId String @map("template_id") @db.Uuid
+  locationId String @map("location_id") @db.Uuid
+
+  template ChecklistTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  location Location          @relation(fields: [locationId], references: [id], onDelete: Cascade)
+
+  @@id([templateId, locationId])
+  @@map("checklist_template_locations")
+}
+
+// ─── CHECKLIST SCHEDULES & ASSIGNMENTS ──────────────────────────────────────
+
+model ChecklistSchedule {
+  id          String    @id @default(uuid()) @db.Uuid
+  templateId  String    @map("template_id") @db.Uuid
+  frequency   String    @db.VarChar(20) // one_time, daily, weekly, monthly, quarterly
+  startDate   DateTime  @map("start_date")
+  endDate     DateTime? @map("end_date")
+  dueTime     String?   @map("due_time") @db.VarChar(5) // HH:mm
+  daysOfWeek  Int[]     @map("days_of_week") // [1,2,3..7] for weekly
+  dayOfMonth  Int?      @map("day_of_month") // 1-31 for monthly
+  isActive    Boolean   @default(true) @map("is_active")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  createdBy   String?   @map("created_by") @db.Uuid
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
+
+  template  ChecklistTemplate  @relation(fields: [templateId], references: [id])
+  instances ChecklistInstance[]
+
+  @@index([templateId])
+  @@index([isActive])
+  @@map("checklist_schedules")
+}
+
+model ChecklistAssignment {
+  id         String   @id @default(uuid()) @db.Uuid
+  templateId String   @map("template_id") @db.Uuid
+  userId     String?  @map("user_id") @db.Uuid
+  roleId     String?  @map("role_id") @db.Uuid
+  isActive   Boolean  @default(true) @map("is_active")
+  createdAt  DateTime @default(now()) @map("created_at")
+  createdBy  String?  @map("created_by") @db.Uuid
+  deletedAt  DateTime? @map("deleted_at")
+
+  template ChecklistTemplate @relation(fields: [templateId], references: [id])
+
+  @@index([templateId])
+  @@index([userId])
+  @@index([roleId])
+  @@map("checklist_assignments")
+}
+
+// ─── INSPECTION ASSIGNMENTS (Advanced Scheduling) ───────────────────────────
+
+model InspectionAssignment {
+  id                    String    @id @default(uuid()) @db.Uuid
+  name                  String    @db.VarChar(255)
+  description           String?   @db.Text
+  templateId            String    @map("template_id") @db.Uuid
+  assigneeIds           String[]  @map("assignee_ids") @db.Uuid
+  recurrenceType        String    @map("recurrence_type") @db.VarChar(20) // once, daily, weekly, monthly, quarterly, yearly, custom
+  scheduledDate         DateTime? @map("scheduled_date") // exact date for one-time (once) assignments
+  nextRunAt             DateTime? @map("next_run_at") // next scheduled generation time for recurring assignments
+  lastRunAt             DateTime? @map("last_run_at") // last time the scheduler generated instances
+  customIntervalHours   Int?      @map("custom_interval_hours")
+  customIntervalType    String?   @map("custom_interval_type") @db.VarChar(20) // hourly, dateRange
+  customDateRangeStart  DateTime? @map("custom_date_range_start")
+  customDateRangeEnd    DateTime? @map("custom_date_range_end")
+  dateRangeIntervalHours Int?     @map("date_range_interval_hours")
+  excludeWeekends       Boolean   @default(false) @map("exclude_weekends")
+  excludeHolidays       Boolean   @default(false) @map("exclude_holidays")
+  excludeHolidayDates   DateTime[] @map("exclude_holiday_dates")
+  excludeVacationDates  DateTime[] @map("exclude_vacation_dates")
+  timeWindowStart       String    @map("time_window_start") @db.VarChar(5) // HH:mm
+  timeWindowEnd         String    @map("time_window_end") @db.VarChar(5)
+  requiresQrStart       Boolean   @default(false) @map("requires_qr_start")
+  requiresApproval      Boolean   @default(false) @map("requires_approval")
+  isActive              Boolean   @default(true) @map("is_active")
+  createdAt             DateTime  @default(now()) @map("created_at")
+  createdBy             String?   @map("created_by") @db.Uuid
+  updatedAt             DateTime  @updatedAt @map("updated_at")
+  updatedBy             String?   @map("updated_by") @db.Uuid
+  deletedAt             DateTime? @map("deleted_at")
+  deletedBy             String?   @map("deleted_by") @db.Uuid
+
+  template      ChecklistTemplate          @relation(fields: [templateId], references: [id])
+  approvalSteps InspectionApprovalStep[]
+  instances     InspectionInstance[]
+  checklistInstances ChecklistInstance[]
+
+  @@index([templateId])
+  @@index([isActive])
+  @@index([nextRunAt])
+  @@map("inspection_assignments")
+}
+
+model InspectionApprovalStep {
+  id           String @id @default(uuid()) @db.Uuid
+  assignmentId String @map("assignment_id") @db.Uuid
+  stepOrder    Int    @map("step_order")
+  approverId   String @map("approver_id") @db.Uuid
+
+  assignment InspectionAssignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+
+  @@index([assignmentId])
+  @@map("inspection_approval_steps")
+}
+
+model InspectionInstance {
+  id                  String    @id @default(uuid()) @db.Uuid
+  assignmentId        String    @map("assignment_id") @db.Uuid
+  assigneeId          String    @map("assignee_id") @db.Uuid
+  status              String    @default("pending") @db.VarChar(30) // pending, in_progress, completed, awaiting_approval, approved, rejected, overdue
+  dueDate             DateTime  @map("due_date")
+  startedAt           DateTime? @map("started_at")
+  completedAt         DateTime? @map("completed_at")
+  currentApprovalStep Int?      @map("current_approval_step")
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @updatedAt @map("updated_at")
+
+  assignment      InspectionAssignment        @relation(fields: [assignmentId], references: [id])
+  approvalHistory InspectionApprovalHistory[]
+  history         InspectionInstanceHistory[]
+
+  @@index([assignmentId])
+  @@index([assigneeId])
+  @@index([status])
+  @@index([dueDate])
+  @@map("inspection_instances")
+}
+
+model InspectionApprovalHistory {
+  id         String   @id @default(uuid()) @db.Uuid
+  instanceId String   @map("instance_id") @db.Uuid
+  stepOrder  Int      @map("step_order")
+  approverId String   @map("approver_id") @db.Uuid
+  action     String   @db.VarChar(20) // approved, rejected
+  comment    String?  @db.Text
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  instance InspectionInstance @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+
+  @@index([instanceId])
+  @@map("inspection_approval_history")
+}
+
+model InspectionInstanceHistory {
+  id          String   @id @default(uuid()) @db.Uuid
+  instanceId  String   @map("instance_id") @db.Uuid
+  action      String   @db.VarChar(30) // created, started, submitted, approved, rejected, reassigned, overdue
+  performedBy String?  @map("performed_by") @db.Uuid
+  comment     String?  @db.Text
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  instance InspectionInstance @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+
+  @@index([instanceId])
+  @@map("inspection_instance_history")
+}
+
+// ─── CHECKLIST INSTANCES ────────────────────────────────────────────────────
+
+model ChecklistInstance {
+  id             String    @id @default(uuid()) @db.Uuid
+  templateId     String    @map("template_id") @db.Uuid
+  scheduleId     String?   @map("schedule_id") @db.Uuid
+  assignmentId   String?   @map("assignment_id") @db.Uuid
+  locationId     String?   @map("location_id") @db.Uuid
+  assignedUserId String?   @map("assigned_user_id") @db.Uuid
+  status         String    @default("pending") @db.VarChar(20) // pending, in_progress, submitted, approved, rejected, overdue
+  dueAt          DateTime? @map("due_at")
+  startedAt      DateTime? @map("started_at")
+  submittedAt    DateTime? @map("submitted_at")
+  completedAt    DateTime? @map("completed_at")
+  currentApprovalStep Int?  @map("current_approval_step")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  template   ChecklistTemplate     @relation(fields: [templateId], references: [id])
+  schedule   ChecklistSchedule?    @relation(fields: [scheduleId], references: [id])
+  assignment InspectionAssignment? @relation(fields: [assignmentId], references: [id])
+  location   Location?             @relation(fields: [locationId], references: [id])
+  responses  ChecklistResponse[]
+  history    ChecklistInstanceHistory[]
+
+  @@index([templateId])
+  @@index([assignmentId])
+  @@index([assignedUserId])
+  @@index([locationId])
+  @@index([status])
+  @@index([dueAt])
+  @@map("checklist_instances")
+}
+
+model ChecklistResponse {
+  id                  String   @id @default(uuid()) @db.Uuid
+  checklistInstanceId String   @map("checklist_instance_id") @db.Uuid
+  fieldId             String   @map("field_id") @db.Uuid
+  locationId          String?  @map("location_id") @db.Uuid
+  value               Json?
+  notes               String?  @db.Text
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  instance ChecklistInstance @relation(fields: [checklistInstanceId], references: [id], onDelete: Cascade)
+  location Location?         @relation(fields: [locationId], references: [id])
+
+  @@index([checklistInstanceId])
+  @@index([fieldId])
+  @@index([locationId])
+  @@map("checklist_responses")
+}
+
+model ChecklistInstanceHistory {
+  id          String   @id @default(uuid()) @db.Uuid
+  instanceId  String   @map("instance_id") @db.Uuid
+  action      String   @db.VarChar(30) // created, started, submitted, approved, rejected, reassigned, overdue
+  performedBy String?  @map("performed_by") @db.Uuid
+  comment     String?  @db.Text
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  instance ChecklistInstance @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+
+  @@index([instanceId])
+  @@map("checklist_instance_history")
 }

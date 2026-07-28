@@ -25,7 +25,8 @@ const PERMISSIONS = [
   // Checklist Template
   'checklist-template.view', 'checklist-template.create', 'checklist-template.update', 'checklist-template.delete', 'checklist-template.assign',
   // Checklist Instance
-  'checklist-instance.view', 'checklist-instance.submit', 'checklist-instance.approve', 'checklist-instance.reject',
+  'checklist-instance.view-all', 'checklist-instance.view-approver', 'checklist-instance.submit',
+  'checklist-instance.approve-own', 'checklist-instance.approve-all', 'checklist-instance.reject-own', 'checklist-instance.reject-all',
   // Incident
   'incident.view', 'incident.create', 'incident.update', 'incident.assign', 'incident.resolve',
   // QR
@@ -49,7 +50,8 @@ const ROLES = {
     'user.view',
     'building.view', 'floor.view', 'location.view',
     'checklist-template.view',
-    'checklist-instance.view', 'checklist-instance.approve', 'checklist-instance.reject',
+    'checklist-instance.view-all', 'checklist-instance.view-approver',
+    'checklist-instance.approve-all', 'checklist-instance.reject-all',
     'incident.view', 'incident.assign', 'incident.resolve',
     'report.view', 'report.export',
     'dashboard.view',
@@ -57,7 +59,8 @@ const ROLES = {
   ],
   'Inspector': [
     'building.view', 'floor.view', 'location.view',
-    'checklist-instance.view', 'checklist-instance.submit',
+    'checklist-instance.view-approver', 'checklist-instance.submit',
+    'checklist-instance.approve-own', 'checklist-instance.reject-own',
     'incident.view', 'incident.create',
     'qr.scan',
     'dashboard.view',
@@ -66,7 +69,7 @@ const ROLES = {
   'Auditor': [
     'user.view',
     'building.view', 'floor.view', 'location.view',
-    'checklist-template.view', 'checklist-instance.view',
+    'checklist-template.view', 'checklist-instance.view-all',
     'incident.view',
     'report.view', 'report.export',
     'dashboard.view',
@@ -86,6 +89,18 @@ async function main() {
       update: {},
       create: { name, description: name.replace('.', ' → ') },
     });
+  }
+
+  // Remove permissions that are no longer defined
+  const stalePermissions = await prisma.permission.findMany({
+    where: { name: { notIn: PERMISSIONS } },
+    select: { id: true, name: true },
+  });
+  if (stalePermissions.length > 0) {
+    const staleIds = stalePermissions.map((p) => p.id);
+    await prisma.rolePermission.deleteMany({ where: { permissionId: { in: staleIds } } });
+    await prisma.permission.deleteMany({ where: { id: { in: staleIds } } });
+    console.log(`  Removed ${stalePermissions.length} stale permission(s): ${stalePermissions.map((p) => p.name).join(', ')}`);
   }
 
   // Create roles and assign permissions

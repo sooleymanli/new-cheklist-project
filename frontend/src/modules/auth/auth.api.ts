@@ -7,7 +7,6 @@ interface LoginRequest {
 
 interface LoginResponse {
   accessToken: string;
-  refreshToken: string;
   user: {
     id: string;
     email: string;
@@ -41,13 +40,12 @@ export const authApi = baseApi.injectEndpoints({
       query: () => '/auth/me',
       transformResponse: (response: { data: ProfileResponse }) => response.data,
     }),
-    refreshToken: builder.mutation<{ accessToken: string; refreshToken: string }, { refreshToken: string }>({
-      query: (body) => ({
+    refreshToken: builder.mutation<{ accessToken: string }, void>({
+      query: () => ({
         url: '/auth/refresh',
         method: 'POST',
-        body,
       }),
-      transformResponse: (response: { data: { accessToken: string; refreshToken: string } }) => response.data,
+      transformResponse: (response: { data: { accessToken: string } }) => response.data,
     }),
     logout: builder.mutation<void, void>({
       query: () => ({

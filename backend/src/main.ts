@@ -2,6 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import cookieParser from 'cookie-parser';
 import { AppModule } from './app.module';
 import { GlobalExceptionFilter } from './common/exception-filters/global-exception.filter';
 import { ResponseInterceptor } from './shared/interceptors/response.interceptor';
@@ -15,6 +16,9 @@ async function bootstrap() {
 
   // Global prefix
   app.setGlobalPrefix('api/v1');
+
+  // Cookie parser (for httpOnly refresh token cookie)
+  app.use(cookieParser());
 
   // CORS
   app.enableCors({

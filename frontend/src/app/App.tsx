@@ -1,5 +1,5 @@
 import { Provider, useSelector } from 'react-redux';
-import { ConfigProvider, theme, App as AntApp, Modal } from 'antd';
+import { ConfigProvider, theme, App as AntApp } from 'antd';
 import { RouterProvider } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import azAZ from 'antd/locale/az_AZ';

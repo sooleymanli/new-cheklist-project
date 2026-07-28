@@ -81,8 +81,7 @@ export default function RolesPage() {
 
   return (
     <div>
-      <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h2 style={{ margin: 0 }}>{t('roles.title')}</h2>
+      <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
         <Button type="primary" icon={<PlusOutlined />} onClick={() => { setEditingRole(null); setFormOpen(true); }}>
           { t('common.create')}
         </Button>

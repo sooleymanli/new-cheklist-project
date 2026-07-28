@@ -6,6 +6,8 @@ import {
   UserOutlined,
   BankOutlined,
   CheckSquareOutlined,
+  FormOutlined,
+  FileTextOutlined,
   WarningOutlined,
   BarChartOutlined,
   SettingOutlined,
@@ -16,12 +18,14 @@ import {
   MoonOutlined,
   MenuOutlined,
   BellOutlined,
+  ScheduleOutlined,
 } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import { useAppDispatch, useAppSelector } from '@/shared/hooks/useStore';
+import { usePermissions } from '@/shared/hooks/usePermissions';
 import { logout, setCredentials } from '@/store/auth.slice';
 import { toggleTheme } from '@/store/ui.slice';
-import { useGetProfileQuery } from '@/modules/auth/auth.api';
+import { useGetProfileQuery, useLogoutMutation } from '@/modules/auth/auth.api';
 
 const { Header, Sider, Content } = Layout;
 const { useBreakpoint } = Grid;
@@ -44,7 +48,9 @@ export function AdminLayout() {
   const user = useAppSelector((state) => state.auth.user);
   const accessToken = useAppSelector((state) => state.auth.accessToken);
   const darkMode = useAppSelector((state) => state.ui.darkMode);
+  const { has, hasAny } = usePermissions();
   const { data: profile } = useGetProfileQuery(undefined, { skip: !!user || !accessToken });
+  const [logoutMutation] = useLogoutMutation();
   const { token: { colorBgContainer, borderRadiusLG } } = theme.useToken();
 
   useEffect(() => {
@@ -56,16 +62,28 @@ export function AdminLayout() {
   }
 
   const menuItems = [
-    { key: '/dashboard', icon: <DashboardOutlined />, label: t('menu.dashboard') },
-    { key: '/roles', icon: <SettingOutlined />, label: t('menu.roles') },
-    { key: '/users', icon: <UserOutlined />, label: t('menu.users') },
-    { key: '/buildings', icon: <BankOutlined />, label: t('menu.buildings') },
-    { key: '/checklists', icon: <CheckSquareOutlined />, label: t('menu.checklists') },
-    { key: '/incidents', icon: <WarningOutlined />, label: t('menu.incidents') },
-    { key: '/reports', icon: <BarChartOutlined />, label: t('menu.reports') },
-  ];
+    { key: '/dashboard', icon: <DashboardOutlined />, label: t('menu.dashboard'), permission: 'dashboard.view' },
+    { key: '/roles', icon: <SettingOutlined />, label: t('menu.roles'), permission: 'role.view' },
+    { key: '/users', icon: <UserOutlined />, label: t('menu.users'), permission: 'user.view' },
+    { key: '/buildings', icon: <BankOutlined />, label: t('menu.buildings'), permission: 'building.view' },
+    { key: '/checklist-templates', icon: <FormOutlined />, label: t('menu.checklistTemplates'), permission: 'checklist-template.view' },
+    { key: '/inspection-assignments', icon: <ScheduleOutlined />, label: t('menu.inspectionAssignments'), permission: 'checklist-template.view' },
+    { key: '/checklist-instances', icon: <CheckSquareOutlined />, label: t('menu.checklistInstances'), anyPermission: ['checklist-instance.view-all', 'checklist-instance.view-approver'] },
+    { key: '/my-checklists', icon: <FileTextOutlined />, label: t('menu.myChecklists'), permission: 'checklist-instance.submit' },
+    { key: '/incidents', icon: <WarningOutlined />, label: t('menu.incidents'), permission: 'incident.view' },
+    { key: '/reports', icon: <BarChartOutlined />, label: t('menu.reports'), permission: 'report.view' },
+  ].filter((item) => {
+    const i = item as { permission?: string; anyPermission?: string[] };
+    if (i.anyPermission) return hasAny(i.anyPermission);
+    return has(i.permission);
+  });
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      await logoutMutation().unwrap();
+    } catch {
+      // ignore network/auth errors; clear client state regardless
+    }
     dispatch(logout());
     navigate('/login');
   };
@@ -84,16 +102,32 @@ export function AdminLayout() {
     { key: 'logout', icon: <LogoutOutlined />, label: t('common.logout'), onClick: handleLogout },
   ];
 
+  const activeMenuKey = menuItems.find((item) => location.pathname === item.key || (item.key !== '/' && location.pathname.startsWith(item.key + '/')))?.key || location.pathname;
+
+  const getPageTitle = (): string => {
+    const path = location.pathname;
+    // Sub-route specific titles
+    if (path === '/checklist-templates/new') return t('checklists.createTemplate');
+    if (path.match(/^\/checklist-templates\/.+/) && path !== '/checklist-templates/new') return t('checklists.editTemplate');
+    if (path === '/inspection-assignments/new') return t('inspections.assign');
+    if (path.match(/^\/inspection-assignments\/.+/) && path !== '/inspection-assignments/new') return t('inspections.editAssignment');
+    // Default: menu item label
+    return (menuItems.find((item) => item.key === activeMenuKey)?.label as string) || '';
+  };
+
   const siderMenu = (
     <>
-      <div style={{ height: 32, margin: 16, color: '#fff', textAlign: 'center', fontWeight: 'bold' }}>
-        {collapsed && !isMobile ? 'FI' : 'Facility'}
+      <div style={{ height: 48, margin: '12px 24px', display: 'flex', alignItems: 'center', }}>
+        {collapsed && !isMobile
+          ? <img src="/brand/mark-white.svg" alt="logo" style={{ height: 32, width: 'auto' }} />
+          : <img src="/brand/logo-white.svg" alt="Facility" style={{ height: 32, width: 'auto' }} />
+        }
       </div>
       <Menu
         theme="dark"
         mode="inline"
         style={{ background: darkMode ? '#141414' : '#001529' }}
-        selectedKeys={[location.pathname]}
+        selectedKeys={[activeMenuKey]}
         items={menuItems}
         onClick={handleMenuClick}
       />
@@ -101,7 +135,7 @@ export function AdminLayout() {
   );
 
   return (
-    <Layout style={{ minHeight: '100vh' }}>
+    <Layout style={{ height: '100vh', overflow: 'hidden' }}>
       {!isMobile && (
         <Sider
           trigger={null}
@@ -122,21 +156,26 @@ export function AdminLayout() {
       >
         {siderMenu}
       </Drawer>
-      <Layout>
+      <Layout style={{ height: '100vh', overflow: 'hidden' }}>
         <Header style={{ padding: '0 16px', background: colorBgContainer, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: `1px solid ${darkMode ? '#303030' : '#f0f0f0'}` }}>
-          {isMobile ? (
-            <Button
-              type="text"
-              icon={<MenuOutlined />}
-              onClick={() => setDrawerOpen(true)}
-            />
-          ) : (
-            <Button
-              type="text"
-              icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
-              onClick={() => setCollapsed(!collapsed)}
-            />
-          )}
+          <Space align="center">
+            {isMobile ? (
+              <Button
+                type="text"
+                icon={<MenuOutlined />}
+                onClick={() => setDrawerOpen(true)}
+              />
+            ) : (
+              <Button
+                type="text"
+                icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
+                onClick={() => setCollapsed(!collapsed)}
+              />
+            )}
+            <span style={{ fontSize: 16, fontWeight: 600 }}>
+              {getPageTitle()}
+            </span>
+          </Space>
           <Space size={isMobile ? 'small' : 'middle'} align="center">
             <Dropdown
               menu={{
@@ -189,7 +228,7 @@ export function AdminLayout() {
             </Dropdown>
           </Space>
         </Header>
-        <Content style={{ margin: 24, padding: 24, background: colorBgContainer, borderRadius: borderRadiusLG }}>
+        <Content style={{ margin: 24, padding: 24, paddingBottom: 16, background: colorBgContainer, borderRadius: borderRadiusLG, overflow: 'auto', flex: 1 }}>
           <Outlet />
         </Content>
       </Layout>

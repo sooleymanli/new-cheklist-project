@@ -217,15 +217,17 @@ export default function UsersPage() {
           columns={columns}
           dataSource={data?.data}
           loading={isLoading}
-          scroll={{ x: 500 }}
+          scroll={{ x: 500, y: 'calc(100vh - 320px)' }}
           rowClassName={(record) => !record.isActive ? 'row-disabled' : ''}
           pagination={{
             current: page,
             pageSize,
             total: data?.meta?.total,
             showSizeChanger: true,
+            position: ['bottomRight'],
             onChange: (p, ps) => setSearchParams((prev) => { prev.set('page', String(p)); prev.set('pageSize', String(ps)); return prev; }),
           }}
+          sticky
         />
       )}
 

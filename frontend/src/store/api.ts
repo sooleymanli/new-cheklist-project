@@ -3,6 +3,7 @@ import type { BaseQueryFn, FetchArgs, FetchBaseQueryError } from '@reduxjs/toolk
 
 const rawBaseQuery = fetchBaseQuery({
   baseUrl: '/api/v1',
+  credentials: 'include',
   prepareHeaders: (headers) => {
     const token = localStorage.getItem('accessToken');
     if (token) {
@@ -24,32 +25,26 @@ const baseQueryWithReauth: BaseQueryFn<string | FetchArgs, unknown, FetchBaseQue
 ) => {
   let result = await rawBaseQuery(args, api, extraOptions);
 
-  if (result.error && result.error.status === 401) {
-    const refreshToken = localStorage.getItem('refreshToken');
-    if (!refreshToken) {
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken');
-      window.location.href = '/login';
-      return result;
-    }
+  const requestUrl = typeof args === 'string' ? args : args.url;
+  const isAuthRequest = requestUrl.includes('/auth/login') || requestUrl.includes('/auth/refresh');
 
+  if (result.error && result.error.status === 401 && !isAuthRequest) {
     if (!isRefreshing) {
       isRefreshing = true;
       refreshPromise = (async () => {
+        // refresh token is sent automatically via httpOnly cookie
         const refreshResult = await rawBaseQuery(
-          { url: '/auth/refresh', method: 'POST', body: { refreshToken } },
+          { url: '/auth/refresh', method: 'POST' },
           api,
           extraOptions,
         );
         if (refreshResult.data) {
           const data = (refreshResult.data as any).data;
           localStorage.setItem('accessToken', data.accessToken);
-          localStorage.setItem('refreshToken', data.refreshToken);
           isRefreshing = false;
           return true;
         } else {
           localStorage.removeItem('accessToken');
-          localStorage.removeItem('refreshToken');
           isRefreshing = false;
           window.location.href = '/login';
           return false;
@@ -78,6 +73,8 @@ export const baseApi = createApi({
     'Locations',
     'ChecklistTemplates',
     'ChecklistInstances',
+    'InspectionAssignments',
+    'ApprovalHistory',
     'Incidents',
     'Notifications',
     'Dashboard',

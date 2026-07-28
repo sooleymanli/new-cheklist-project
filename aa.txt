@@ -1,0 +1,3 @@
+Cavab növündə placeholder 3 dildə olmalıdır
+Cavab növü seçim olan zaman  File məcburyyəti ola bilər yaxud normativdən kənara əsaslana bilər. Normativlər Multi seçim ola bilər
+Deadline bitende yoxlamanin statusu deyisib gecikmede olmalidir

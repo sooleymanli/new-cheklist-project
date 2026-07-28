@@ -1,0 +1,586 @@
+/* ============================================================
+   Login page — split-screen design (Paşa Həyat)
+   ============================================================ */
+.login-app {
+  position: relative;
+  min-height: 100vh;
+  color: var(--lg-text);
+  background: var(--lg-bg);
+  --lg-ring: color-mix(in srgb, var(--lg-primary) 18%, transparent);
+}
+
+.login-app[data-theme='light'] {
+  --lg-bg: #f2f5f9;
+  --lg-card: #ffffff;
+  --lg-input-bg: #ffffff;
+  --lg-text: #1a2436;
+  --lg-muted: #5c6b82;
+  --lg-border: #d7dfe9;
+  --lg-danger: #c03b3b;
+  --lg-warn: #95650d;
+  --lg-success: #1e7f4f;
+  --lg-link: var(--lg-primary);
+}
+
+.login-app[data-theme='dark'] {
+  --lg-bg: #141414;
+  --lg-card: #1f1f1f;
+  --lg-input-bg: #141414;
+  --lg-text: #e9e9e9;
+  --lg-muted: #9a9a9a;
+  --lg-border: #353535;
+  --lg-danger: #e47c7c;
+  --lg-warn: #e2b566;
+  --lg-success: #4cc38a;
+  --lg-link: color-mix(in oklab, var(--lg-primary) 50%, white);
+}
+
+.login-app * {
+  box-sizing: border-box;
+}
+
+/* ---------- top-right chrome (lang + theme) ---------- */
+.lg-chrome {
+  position: absolute;
+  top: 22px;
+  right: 24px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  z-index: 30;
+}
+.lg-lang-switch {
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  background: color-mix(in srgb, var(--lg-card) 82%, transparent);
+  border: 1px solid var(--lg-border);
+  border-radius: 999px;
+  backdrop-filter: blur(8px);
+}
+.lg-lang-btn {
+  border: none;
+  background: transparent;
+  font: inherit;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  color: var(--lg-muted);
+  padding: 5px 10px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.lg-lang-btn:hover {
+  color: var(--lg-text);
+}
+.lg-lang-btn.active {
+  background: var(--lg-primary);
+  color: #fff;
+}
+.lg-theme-toggle {
+  width: 35px;
+  height: 35px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  border: 1px solid var(--lg-border);
+  border-radius: 999px;
+  color: var(--lg-muted);
+  background: color-mix(in srgb, var(--lg-card) 82%, transparent);
+  backdrop-filter: blur(8px);
+  transition: color 0.15s, border-color 0.15s;
+}
+.lg-theme-toggle:hover {
+  color: var(--lg-text);
+}
+
+/* ---------- layout: split ---------- */
+.lg-split {
+  display: grid;
+  grid-template-columns: minmax(400px, 44%) 1fr;
+}
+
+/* ---------- brand panel (left) ---------- */
+.lg-brand-panel {
+  position: relative;
+  overflow: visible;
+  z-index: 2;
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 44px 48px;
+  background: linear-gradient(
+    170deg,
+    color-mix(in oklab, var(--lg-primary) 80%, #04101f) 0%,
+    color-mix(in oklab, var(--lg-primary) 42%, #04101f) 100%
+  );
+}
+.lg-glow {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  pointer-events: none;
+}
+.lg-glow.g1 {
+  width: 460px;
+  height: 460px;
+  top: -160px;
+  right: -140px;
+  opacity: 0.34;
+  background: color-mix(in oklab, var(--lg-primary) 55%, white);
+}
+.lg-glow.g2 {
+  width: 380px;
+  height: 380px;
+  bottom: -140px;
+  left: -160px;
+  opacity: 0.22;
+  background: color-mix(in oklab, var(--lg-primary) 75%, white);
+}
+.lg-brand-pattern {
+  position: absolute;
+  inset: -40px;
+  pointer-events: none;
+  background-image: url('/brand/mark-white.svg');
+  background-size: 132px;
+  opacity: 0.045;
+}
+.lg-brand-mark {
+  position: absolute;
+  right: -90px;
+  bottom: -100px;
+  width: 380px;
+  opacity: 0.07;
+  transform: rotate(10deg);
+  pointer-events: none;
+}
+.lg-brand-top,
+.lg-brand-mid,
+.lg-brand-foot {
+  position: relative;
+}
+.lg-brand-tagline {
+  margin: 0;
+  font-size: clamp(24px, 2.3vw, 30px);
+  line-height: 1.32;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  max-width: 420px;
+  text-wrap: pretty;
+}
+.lg-brand-foot {
+  font-size: 12.5px;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+/* glass preview stack */
+.lg-stack {
+  position: relative;
+  margin-top: 38px;
+  max-width: 372px;
+}
+.lg-glass-card {
+  position: relative;
+  background: rgba(255, 255, 255, 0.09);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 16px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  padding: 18px 20px;
+  box-shadow: 0 28px 56px -26px rgba(0, 0, 0, 0.55);
+}
+.lg-glass-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.lg-glass-loc {
+  font-size: 14px;
+  font-weight: 600;
+}
+.lg-glass-chip {
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  padding: 3.5px 10px;
+  border-radius: 999px;
+  color: #a5e8c5;
+  background: rgba(110, 220, 160, 0.14);
+  border: 1px solid rgba(110, 220, 160, 0.3);
+}
+.lg-glass-list {
+  list-style: none;
+  margin: 0 0 16px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+.lg-glass-list li {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 13.5px;
+  color: rgba(255, 255, 255, 0.85);
+}
+.lg-glass-list svg {
+  flex-shrink: 0;
+  color: rgba(255, 255, 255, 0.8);
+}
+.lg-progress-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.lg-progress {
+  flex: 1;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.14);
+  overflow: hidden;
+}
+.lg-progress-fill {
+  width: 87%;
+  height: 100%;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.85);
+}
+.lg-progress-num {
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.75);
+}
+.lg-qr {
+  position: absolute;
+  right: -16px;
+  bottom: -24px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.92);
+  background: rgba(8, 18, 32, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 16px 36px -16px rgba(0, 0, 0, 0.6);
+}
+.lg-qr svg {
+  color: rgba(255, 255, 255, 0.85);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .lg-glass-card {
+    animation: lg-float 7s ease-in-out infinite alternate;
+  }
+  .lg-qr {
+    animation: lg-float 6s 0.8s ease-in-out infinite alternate-reverse;
+  }
+  @keyframes lg-float {
+    from {
+      transform: translateY(0);
+    }
+    to {
+      transform: translateY(-7px);
+    }
+  }
+}
+
+/* ---------- stage (form side) ---------- */
+.lg-stage {
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 22px;
+  padding: 72px 24px 40px;
+  background: var(--lg-bg);
+}
+.lg-stage-logo {
+  line-height: 0;
+}
+.lg-card {
+  width: 100%;
+  max-width: 400px;
+}
+.lg-logo-img {
+  height: 42px;
+}
+.lg-only-mobile {
+  display: none;
+}
+
+/* ---------- form ---------- */
+.lg-form {
+  width: 100%;
+}
+.lg-title {
+  margin: 0 0 6px;
+  font-size: 25px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--lg-text);
+}
+.lg-subtitle {
+  margin: 0 0 26px;
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--lg-muted);
+  text-wrap: pretty;
+}
+.lg-field {
+  margin-bottom: 18px;
+}
+.lg-field-label {
+  display: block;
+  margin-bottom: 7px;
+  font-size: 13px;
+  font-weight: 600;
+  color: color-mix(in srgb, var(--lg-text) 88%, var(--lg-muted));
+}
+
+/* Ant Design Form labels to match design */
+.lg-form .ant-form-item {
+  margin-bottom: 16px;
+}.lg-form .ant-form-item-label {
+  padding-bottom: 5px;
+}
+.lg-form .ant-form-item-label > label {
+  height: auto;
+  font-size: 13px;
+  font-weight: 600;
+  color: color-mix(in srgb, var(--lg-text) 88%, var(--lg-muted));
+}
+.lg-input {
+  width: 100%;
+  height: 44px;
+  padding: 0 14px;
+  font: inherit;
+  font-size: 15px;
+  color: var(--lg-text);
+  background: var(--lg-input-bg);
+  border: 1px solid var(--lg-border);
+  border-radius: var(--lg-radius);
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.lg-input::placeholder {
+  color: color-mix(in srgb, var(--lg-muted) 65%, transparent);
+}
+.lg-input:focus {
+  border-color: var(--lg-primary);
+  box-shadow: 0 0 0 3px var(--lg-ring);
+}
+.lg-input:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.lg-has-error .lg-input {
+  border-color: var(--lg-danger);
+}
+.lg-has-error .lg-input:focus {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--lg-danger) 15%, transparent);
+}
+.lg-field-error {
+  margin-top: 6px;
+  font-size: 13px;
+  color: var(--lg-danger);
+}
+.lg-pw-wrap {
+  position: relative;
+}
+.lg-pw-wrap .lg-input {
+  padding-right: 46px;
+}
+.lg-pw-eye {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border: none;
+  background: transparent;
+  color: var(--lg-muted);
+  cursor: pointer;
+  border-radius: calc(var(--lg-radius) - 2px);
+  transition: color 0.15s, background 0.15s;
+}
+.lg-pw-eye:hover {
+  color: var(--lg-text);
+  background: color-mix(in srgb, var(--lg-muted) 10%, transparent);
+}
+.lg-form-row {
+  display: flex;
+  justify-content: flex-end;
+  margin: -4px 0 22px;
+}
+.lg-form-row.center {
+  justify-content: center;
+  margin: 20px 0 0;
+}
+.lg-link {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--lg-link);
+  text-decoration: none;
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: inherit;
+}
+.lg-link:hover {
+  text-decoration: underline;
+}
+.lg-btn-primary {
+  width: 100%;
+  height: 46px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  background: var(--lg-primary);
+  color: #fff;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  border: none;
+  border-radius: var(--lg-radius);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.lg-btn-primary:hover:not(:disabled) {
+  background: color-mix(in oklab, var(--lg-primary) 86%, black);
+}
+.login-app[data-theme='dark'] .lg-btn-primary:hover:not(:disabled) {
+  background: color-mix(in oklab, var(--lg-primary) 82%, white);
+}
+.lg-btn-primary:active:not(:disabled) {
+  transform: translateY(1px);
+}
+.lg-btn-primary:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.lg-alert {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+  padding: 11px 13px;
+  border: 1px solid;
+  border-radius: var(--lg-radius);
+  font-size: 13.5px;
+  line-height: 1.45;
+}
+.lg-alert-error {
+  color: var(--lg-danger);
+  background: color-mix(in srgb, var(--lg-danger) 7%, var(--lg-card));
+  border-color: color-mix(in srgb, var(--lg-danger) 32%, transparent);
+}
+.lg-alert svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.lg-demo-hint {
+  margin-top: 22px;
+  padding-top: 16px;
+  border-top: 1px dashed var(--lg-border);
+  font-size: 12px;
+  color: var(--lg-muted);
+  line-height: 1.6;
+}
+.lg-demo-hint code {
+  font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  font-size: 11.5px;
+  background: color-mix(in srgb, var(--lg-muted) 9%, transparent);
+  padding: 1.5px 6px;
+  border-radius: 5px;
+}
+.lg-spinner {
+  animation: lg-spin 0.8s linear infinite;
+}
+@keyframes lg-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ---------- dark mode: brand panel ---------- */
+.login-app[data-theme='dark'] .lg-brand-panel {
+  color: #e9e9e9;
+  background: #141414;
+}
+.login-app[data-theme='dark'] .lg-glow.g1 {
+  opacity: 0.22;
+}
+.login-app[data-theme='dark'] .lg-glow.g2 {
+  opacity: 0.16;
+}
+.login-app[data-theme='dark'] .lg-glass-card {
+  background: color-mix(in srgb, #ffffff 5%, transparent);
+  border-color: color-mix(in srgb, #ffffff 12%, transparent);
+}
+.login-app[data-theme='dark'] .lg-brand-tagline {
+  color: #f1f3f6;
+}
+.login-app[data-theme='dark'] .lg-brand-foot,
+.login-app[data-theme='dark'] .lg-qr {
+  color: color-mix(in srgb, #ffffff 60%, transparent);
+}
+
+/* ---------- Ant Design control tuning ---------- */
+.lg-form .ant-input-affix-wrapper,
+.lg-form .ant-input {
+  border-radius: var(--lg-radius);
+}
+.lg-form .ant-btn {
+  border-radius: var(--lg-radius);
+}
+.lg-submit-btn {
+  height: 46px;
+  font-weight: 600;
+  margin-top: 4px;
+}
+
+/* ---------- disable browser autofill background ---------- */
+.lg-form input:-webkit-autofill,
+.lg-form input:-webkit-autofill:hover,
+.lg-form input:-webkit-autofill:focus,
+.lg-form input:-webkit-autofill:active {
+  -webkit-text-fill-color: var(--lg-text) !important;
+  box-shadow: 0 0 0 1000px var(--lg-input-bg) inset !important;
+  -webkit-box-shadow: 0 0 0 1000px var(--lg-input-bg) inset !important;
+  background-color: var(--lg-input-bg) !important;
+  background-image: none !important;
+  caret-color: var(--lg-text);
+  transition: background-color 9999s ease-in-out 0s;
+}
+.lg-form .ant-input-affix-wrapper:has(input:-webkit-autofill) {
+  background-color: var(--lg-input-bg) !important;
+}
+
+/* ---------- responsive ---------- */
+@media (max-width: 880px) {
+  .lg-split {
+    grid-template-columns: 1fr;
+  }
+  .lg-brand-panel {
+    display: none;
+  }
+  .lg-only-mobile {
+    display: block;
+  }
+}
