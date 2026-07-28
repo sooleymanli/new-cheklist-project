@@ -1,0 +1,101 @@
+Plan: Facility Inspection Platform — Fazalı İnkişaf
+Yanaşma: Backend-first (hər modul üçün əvvəl API, sonra UI). Hər faza müstəqil test edilə bilən, işləyən nəticə verir. MVP = Faza 0–3.
+
+
+Faza 0: Project Scaffolding & Infrastructure
+Nə edilir: Boş amma tam işləyən skeleton — backend, frontend, Docker mühiti.
+
+Monorepo yaratmaq: /backend (NestJS), /frontend (React 19 + Vite), /docker
+Backend skeleton: modular structure, Prisma setup, global exception filter, validation pipe, Pino logger, health check, Swagger, env config
+Frontend skeleton: Vite + TS, Redux store + RTK Query base, Ant Design + theme, i18next (az/en/ru), React Router v7, layouts, Error Boundary
+Docker Compose: PostgreSQL 16, Redis 7, MinIO, Nginx reverse proxy, backend, frontend
+Nginx config: /api → backend, / → frontend, /socket.io → backend
+Test: docker-compose up → health OK, Swagger açılır, frontend boş layout görünür.
+
+
+
+Faza 1: Authentication & User Management
+Nə edilir: Login, JWT, RBAC, User CRUD — sistemin skeletonu.
+
+DB: companies, roles, permissions, role_permissions, users + audit fields + seed data
+Backend Auth: login, refresh, logout, me, forgot/reset/change password, JWT strategy, bcrypt, rate limiting
+Backend Roles/Permissions: CRUD + permission guard decorator @Permissions('resource.action')
+Backend Users: paginated list, create, update, soft delete, activate/deactivate
+Frontend Auth: login page, token management, protected routes, permission guard component
+Frontend Users: list (Ant Table, URL-based pagination/filter), create/edit form (RHF + Zod)
+Frontend Roles: list, create/edit with permission checkboxes
+Test: Login → token → protected route. RBAC: icazəsiz endpoint → 403. Users CRUD tam. /users?page=2&status=active refresh-safe.
+
+
+
+Faza 2: Building / Floor / Location + QR
+Nə edilir: Fiziki strukturlar iyerarxiyası + QR code.
+
+DB: buildings, floors, locations, qr_codes, qr_scan_logs
+Backend: Buildings/Floors/Locations CRUD + activate/deactivate. QR generate/scan/download.
+Frontend: Buildings list+form → Floors (filtered by building) → Locations (filtered by building/floor). QR generate button + display/download.
+Test: Iyerarxik CRUD. QR generasiya → skan → düzgün entity. Cascade soft-delete.
+
+
+
+Faza 3: Dynamic Checklist System (Core Business)
+Nə edilir: Template builder, scheduling, assignment, execution, submission — layihənin ürəyi.
+
+DB: checklist_templates, checklist_template_fields (JSONB), checklist_schedules, checklist_assignments, checklist_instances, checklist_responses, files
+Backend Template: CRUD + dynamic field builder + location association + versioning
+Backend Scheduling/Assignment: schedule CRUD, assignment CRUD, QR-only flag, BullMQ cron job (daily/weekly/monthly instance generation)
+Backend Execution: instance list/detail, start, submit + state machine (valid transitions only), file upload (MinIO), overdue detection job
+Backend QR Flow: scan → location identify → find matching instance → auto-start
+Frontend Template Builder: dynamic field configuration UI (type, required, options, photo/file required)
+Frontend Execution: "Mənim checklistlərim" page, dynamic <FieldRenderer />, photo/file upload, signature canvas, submit
+Test: Admin template yaradır → schedule → assign → instance auto-generate. Employee fill+submit. QR scan → checklist açılır. Overdue job işləyir. Fayllar MinIO-da.
+
+
+
+
+Faza 4: Approval + Notifications + Rating
+Nə edilir: Checklist approval workflow, real-time bildirişlər, reytinq.
+
+Approval: approve/reject endpoints, multi-level config, state transitions, rejection reason
+Notifications (Event-Driven): domain events → notification record + Socket.IO emit. Notification CRUD. Redis adapter.
+Rating: score calculation on events (+1 on time, -3 delayed, -5 rejected, -10 missed). Leaderboard.
+Frontend: approval list/actions, notification bell+drawer (Socket.IO client), rating display, leaderboard
+Test: Submit → supervisor-a real-time notification. Approve/reject workflow. Rating hesablanır.
+
+
+Faza 5: Incidents + Dashboard + Reports
+Nə edilir: Problem reporting, KPI dashboard, export.
+
+Incidents: categories CRUD, incident CRUD + state machine (OPEN→ASSIGNED→IN_PROGRESS→RESOLVED→CLOSED), timeline, comments, auto-incident from checklist
+Dashboard: independent widget endpoints (checklist-stats, incident-stats, activity-feed, facility-health). Redis cache 60s.
+Reports: filtered queries, async PDF/Excel export (BullMQ job → notification when ready)
+Frontend: incident list+form+detail+timeline, dashboard widgets (independent load), report filters+export
+Test: Incident full lifecycle. Auto-incident from "NO" answer. Dashboard widgets independent. Large export → queue → download.
+
+
+
+Faza 6: Audit, Settings, Polish & Production
+Nə edilir: Audit log, global settings, tam lokalizasiya, security hardening.
+
+Audit: interceptor-based logging (before/after), immutable log table, paginated query
+Settings: company config, file limits, notification preferences
+i18n completion: bütün error messages, notifications, UI texts — 3 dildə
+Theme: dark/light toggle + persist
+Security: rate limiting, CORS, security headers, file validation, signed URL expiry
+Performance: DB index optimization, Redis cache for roles, lazy loading, React Window
+
+
+Qısa Xülasə
+Faza	Nəticə	Təxmini əhatə
+0	İşləyən boş skeleton + Docker	İnfrastruktur
+1	Auth + Users + RBAC	Giriş + İdarəetmə
+2	Buildings + QR	Fiziki struktur
+3	Checklists (builder → execution)	Core business
+4	Approval + Notifications + Rating	Workflow
+5	Incidents + Dashboard + Reports	Analytics
+6	Audit + Settings + Polish	Production-ready
+MVP boundary: Faza 0–3 tamamlandıqda funksional məhsul var (login → checklist yaratmaq → təyin etmək → doldurmaq → submit).
+
+Planı təsdiqləyirsinizsə, Faza 0 ilə başlaya bilərik. Hər hansı dəyişiklik və ya sual varsa — bildirin.
+
+2 months
